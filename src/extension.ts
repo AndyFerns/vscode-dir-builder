@@ -2,7 +2,7 @@
 VSCode Extension: Directory Builder from Text Tree
 --------------------------------------------------
 - Input: Tree-style directory structure as plain text.
-- Output: Actual files and folders created in the workspace after user preview.
+- Output: Actual files and folders created in the selected folder after user preview.
 */
 
 import * as vscode from 'vscode';
@@ -17,25 +17,23 @@ function parseDirectoryTree(input: string, rootPath: string): { path: string, is
 
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
-    if (!trimmed) { 
-		continue;
-	}
-
+    if (!trimmed) {
+      continue;
+    }
     const line = rawLine.replace(/^[\s\u2502]*[\u251C\u2514]\u2500\u2500\s*/, '');
     const depth = rawLine.search(/\S/) / 2; // Assume 2-space indentation per level
 
     while (stack.length > depth + 1) {
-		stack.pop();
-	}
-
+      stack.pop();
+    }
     const isDir = line.endsWith('/');
     const name = line.replace(/\/$/, '').trim();
     const fullPath = path.join(stack[stack.length - 1], name);
 
     result.push({ path: fullPath, isDir });
-    if (isDir) { 
-		stack.push(fullPath);
-	}
+    if (isDir) {
+      stack.push(fullPath);
+    }
   }
 
   return result;
@@ -88,16 +86,21 @@ export function activate(context: vscode.ExtensionContext) {
       ignoreFocusOut: true,
     });
 
-    if (!input) { 
-		return vscode.window.showErrorMessage('No input provided.');
-	}
+    if (!input) {
+      return vscode.window.showErrorMessage('No input provided.');
+    }
+    const folderUri = await vscode.window.showOpenDialog({
+      canSelectFolders: true,
+      canSelectFiles: false,
+      canSelectMany: false,
+      openLabel: 'Select root folder for directory structure'
+    });
 
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) { 
-		return vscode.window.showErrorMessage('No workspace folder is open.');
-	}
+    if (!folderUri || folderUri.length === 0) {
+      return vscode.window.showErrorMessage('No folder selected.');
+    }
 
-    const rootPath = workspaceFolders[0].uri.fsPath;
+    const rootPath = folderUri[0].fsPath;
     const items = parseDirectoryTree(input, rootPath);
 
     showPreview(items, () => {
