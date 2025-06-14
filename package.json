@@ -12,6 +12,7 @@
     "structure",
     "filesystem",
     "scaffolding",
+    "generate",
     "codegen",
     "tree",
     "folder",
