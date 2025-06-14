@@ -59,16 +59,6 @@ This extension was built following VSCode's official guidelines:
 
 ---
 
-## Working with Markdown
-
-Helpful markdown tools when editing this README:
-
-- Toggle preview (`Ctrl+Shift+V` / `Cmd+Shift+V`)
-- Split editor: (`Ctrl+\` / `Cmd+\`)
-- Use `Ctrl+Space` to trigger suggestions
-
----
-
 ## For more information
 
 - [VSCode API Docs](https://code.visualstudio.com/api)
