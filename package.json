@@ -2,15 +2,27 @@
   "name": "vscode-dir-builder",
   "displayName": "Create Directory Structure",
   "description": "Create Directory Structure from Text given by LLMs",
+  "publisher": "Andrew Fernandes",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.101.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Notebooks",
+    "Snippets"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AndyFerns/vscode-dir-builder"
+  },
+  "bugs": {
+    "url": "https://github.com/AndyFerns/vscode-dir-builder/issues"
+  },
+  "homepage": "https://github.com/AndyFerns/vscode-dir-builder#readme",
+
   "contributes": {
     "commands": [
       {
