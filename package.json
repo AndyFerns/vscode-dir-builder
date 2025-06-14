@@ -2,7 +2,7 @@
   "name": "vscode-dir-builder",
   "displayName": "Create Directory Structure",
   "description": "Create Directory Structure from Text given by LLMs",
-  "publisher": "Andrew Fernandes",
+  "publisher": "AndrewFernandes",
   "icon": "icon.png",
   "version": "0.0.1",
   "engines": {
