@@ -3,6 +3,7 @@
   "displayName": "Create Directory Structure",
   "description": "Create Directory Structure from Text given by LLMs",
   "publisher": "Andrew Fernandes",
+  "icon": "icon.png",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.101.0"
