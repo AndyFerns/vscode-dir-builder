@@ -136,7 +136,37 @@ async function getDirectoryInput(): Promise<string | undefined> {
   });
 }
 
-// Display preview in a Webview
+// Build a nested object tree from the flat list
+function buildTreeStructure(items: { path: string; isDir: boolean }[], rootPath: string) {
+  const root: any = { name: path.basename(rootPath), isDir: true, children: [] };
+  const pathMap = { [rootPath]: root };
+
+  for (const item of items) {
+    const parentPath = path.dirname(item.path);
+    const node = { name: path.basename(item.path), isDir: item.isDir, children: [] };
+    pathMap[item.path] = node;
+
+    const parent = pathMap[parentPath];
+    if (parent && parent.children) {
+      parent.children.push(node);
+    }
+  }
+
+  return root;
+}
+
+// Convert the tree structure into nested <ul><li> HTML
+function generateTreeHTML(node: any): string {
+  const icon = node.isDir ? '📁' : '📄';
+  const childrenHTML = node.children?.map(generateTreeHTML).join('') || '';
+  return `
+    <li>
+      ${icon} ${node.name}
+      ${node.children?.length ? `<ul>${childrenHTML}</ul>` : ''}
+    </li>
+  `;
+}
+
 function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: () => void) {
   const panel = vscode.window.createWebviewPanel(
     'previewTree',
@@ -145,10 +175,9 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
     { enableScripts: true }
   );
 
-  const listItems = treeItems.map(item => {
-    const label = item.path.split(path.sep).pop();
-    return `<li>${item.isDir ? '📁' : '📄'} ${label}</li>`;
-  }).join('');
+  const rootPath = path.dirname(treeItems[0].path);
+  const tree = buildTreeStructure(treeItems, rootPath);
+  const treeHtml = generateTreeHTML(tree);
 
   panel.webview.html = `
     <!DOCTYPE html>
@@ -164,10 +193,10 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
         }
         ul {
           list-style-type: none;
-          padding-left: 0;
+          padding-left: 20px;
         }
         li {
-          padding: 4px 0;
+          margin: 4px 0;
         }
         button {
           margin-top: 12px;
@@ -184,7 +213,7 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
     </head>
     <body>
       <h2>Directory Preview</h2>
-      <ul>${listItems}</ul>
+      <ul>${treeHtml}</ul>
       <button onclick="confirm()">Create Structure</button>
       <script>
         const vscode = acquireVsCodeApi();
@@ -195,7 +224,7 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
     </body>
     </html>
   `;
-
+  
   panel.webview.onDidReceiveMessage(message => {
     if (message.command === 'confirm') {
       panel.dispose();
@@ -203,6 +232,7 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
     }
   });
 }
+
 
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand('extension.buildDirectoryStructure', async () => {
