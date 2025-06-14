@@ -20,11 +20,11 @@ let createdItems: string[] = []; // Track created items for undo
 // Parses input tree and returns structured list
 function parseDirectoryTree(input: string, rootPath: string): { path: string, isDir: boolean }[] {
   const cleaned = input
-    .replace(/\r\n/g, '\n')
-    .replace(/[│]+/g, '│')
-    .replace(/[\u00A0]/g, ' ')
-    .replace(/[ ]{2,}/g, ' ')
-    .replace(/(\. )?├──/g, '├──')
+    .replace(/\r\n/g, '\n')         // Normalize Windows line endings
+    .replace(/[│]+/g, '│')          // Clean duplicated vertical bars
+    .replace(/[\u00A0]/g, ' ')      // Replace non-breaking space
+    .replace(/[ ]{2,}/g, ' ')       // Collapse excessive spaces
+    .replace(/(\. )?├──/g, '├──')   // Fix `. ├──` artifacts
     .replace(/(\. )?└──/g, '└──');
 
   const lines = cleaned
@@ -42,6 +42,7 @@ function parseDirectoryTree(input: string, rootPath: string): { path: string, is
     if (!match) {
       continue;
     }
+
     const indent = match[1].length;
     const nameRaw = match[2].trim();
     const isDir = nameRaw.endsWith('/') || nameRaw.endsWith(':');
@@ -71,15 +72,48 @@ async function getDirectoryInput(): Promise<string | undefined> {
       'treeInput',
       'Paste Directory Tree',
       vscode.ViewColumn.One,
-      { enableScripts: true }
+      { enableScripts: true, retainContextWhenHidden: true }
     );
 
     panel.webview.html = `
       <!DOCTYPE html>
       <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body {
+            font-family: var(--vscode-font-family);
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            padding: 16px;
+          }
+          textarea {
+            width: 100%;
+            height: 300px;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            border: 1px solid var(--vscode-editorWidget-border);
+            padding: 10px;
+            resize: vertical;
+          }
+          button {
+            margin-top: 12px;
+            padding: 6px 12px;
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            cursor: pointer;
+          }
+          button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+          }
+        </style>
+      </head>
       <body>
         <h2>Paste Directory Tree</h2>
-        <textarea id="tree" rows="15" style="width:100%" placeholder="Paste tree here"></textarea>
+        <textarea id="tree" placeholder="Paste tree here"></textarea>
         <br>
         <button onclick="submitTree()">Submit</button>
         <script>
@@ -119,6 +153,35 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
   panel.webview.html = `
     <!DOCTYPE html>
     <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: var(--vscode-font-family);
+          background-color: var(--vscode-editor-background);
+          color: var(--vscode-editor-foreground);
+          padding: 16px;
+        }
+        ul {
+          list-style-type: none;
+          padding-left: 0;
+        }
+        li {
+          padding: 4px 0;
+        }
+        button {
+          margin-top: 12px;
+          padding: 6px 12px;
+          background-color: var(--vscode-button-background);
+          color: var(--vscode-button-foreground);
+          border: none;
+          cursor: pointer;
+        }
+        button:hover {
+          background-color: var(--vscode-button-hoverBackground);
+        }
+      </style>
+    </head>
     <body>
       <h2>Directory Preview</h2>
       <ul>${listItems}</ul>
@@ -145,7 +208,6 @@ export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand('extension.buildDirectoryStructure', async () => {
     let input = await getDirectoryInput();
 
-    // Fallback to inputBox if no input from Webview
     if (!input) {
       input = await vscode.window.showInputBox({
         placeHolder: 'Paste your directory tree (e.g., with ├──, └──, or indented)',
@@ -181,6 +243,11 @@ export function activate(context: vscode.ExtensionContext) {
             createdItems.push(item.path);
           }
         } else {
+          if (fs.existsSync(item.path) && fs.lstatSync(item.path).isDirectory()) {
+            console.warn(`Skipping write to directory path: ${item.path}`);
+            continue;
+          }
+
           if (fs.existsSync(item.path)) {
             const choice = await vscode.window.showQuickPick([
               'Overwrite', 'Skip', 'Cancel Entire Operation'
