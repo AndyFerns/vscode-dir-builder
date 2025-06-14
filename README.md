@@ -2,7 +2,7 @@
 
 **vscode-dir-builder** is a Visual Studio Code extension that allows you to generate complex directory and file structures by simply pasting a directory tree in text format. It's perfect for scaffolding projects quickly and visually. Its also useful for DIRECTLY copy-pasting directory structures provided by LLMs and creating the files and folders automatically, saving precious time!
 
-![Preview](images/preview.png)
+![Preview](assets/Project%20Demo%20GIF.gif)
 
 ---
 
