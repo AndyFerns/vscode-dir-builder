@@ -7,6 +7,16 @@
   "engines": {
     "vscode": "^1.101.0"
   },
+  "keywords": [
+    "directory",
+    "structure",
+    "filesystem",
+    "scaffolding",
+    "codegen",
+    "tree",
+    "folder",
+    "create"
+  ],
   "categories": [
     "Other",
     "Notebooks",
