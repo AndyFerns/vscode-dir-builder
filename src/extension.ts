@@ -8,6 +8,7 @@ VSCode Extension: Directory Builder from Text Tree
   - Undo support to delete created structure
   - Conflict resolution prompt for existing files
   - Robust parsing with indentation and symbols like ├──, └──, │
+  - Webview-based multiline input support
 */
 
 import * as vscode from 'vscode';
@@ -18,7 +19,19 @@ let createdItems: string[] = []; // Track created items for undo
 
 // Parses input tree and returns structured list
 function parseDirectoryTree(input: string, rootPath: string): { path: string, isDir: boolean }[] {
-  const lines = input.split('\n');
+  const cleaned = input
+    .replace(/\r\n/g, '\n')
+    .replace(/[│]+/g, '│')
+    .replace(/[\u00A0]/g, ' ')
+    .replace(/[ ]{2,}/g, ' ')
+    .replace(/(\. )?├──/g, '├──')
+    .replace(/(\. )?└──/g, '└──');
+
+  const lines = cleaned
+    .split('\n')
+    .map(line => line.trimEnd())
+    .filter(line => line.length > 0);
+
   const result: { path: string, isDir: boolean }[] = [];
   const stack: string[] = [rootPath];
   const depthStack: number[] = [-1];
@@ -34,7 +47,6 @@ function parseDirectoryTree(input: string, rootPath: string): { path: string, is
     const isDir = nameRaw.endsWith('/') || nameRaw.endsWith(':');
     const name = nameRaw.replace(/[:/]$/, '').trim();
 
-    // Adjust stack based on indentation
     while (depthStack.length && indent <= depthStack[depthStack.length - 1]) {
       stack.pop();
       depthStack.pop();
@@ -50,6 +62,44 @@ function parseDirectoryTree(input: string, rootPath: string): { path: string, is
   }
 
   return result;
+}
+
+// Show a webview-based multiline input box for tree input
+async function getDirectoryInput(): Promise<string | undefined> {
+  return new Promise(resolve => {
+    const panel = vscode.window.createWebviewPanel(
+      'treeInput',
+      'Paste Directory Tree',
+      vscode.ViewColumn.One,
+      { enableScripts: true }
+    );
+
+    panel.webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <body>
+        <h2>Paste Directory Tree</h2>
+        <textarea id="tree" rows="15" style="width:100%" placeholder="Paste tree here"></textarea>
+        <br>
+        <button onclick="submitTree()">Submit</button>
+        <script>
+          const vscode = acquireVsCodeApi();
+          function submitTree() {
+            const tree = document.getElementById('tree').value;
+            vscode.postMessage({ command: 'submit', tree });
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    panel.webview.onDidReceiveMessage(msg => {
+      if (msg.command === 'submit') {
+        panel.dispose();
+        resolve(msg.tree);
+      }
+    });
+  });
 }
 
 // Display preview in a Webview
@@ -93,15 +143,21 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
 
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand('extension.buildDirectoryStructure', async () => {
-    const input = await vscode.window.showInputBox({
-      placeHolder: 'Paste your directory tree (e.g., with ├──, └──, or indented)',
-      prompt: 'Enter the directory structure tree text',
-      ignoreFocusOut: true,
-    });
+    let input = await getDirectoryInput();
+
+    // Fallback to inputBox if no input from Webview
+    if (!input) {
+      input = await vscode.window.showInputBox({
+        placeHolder: 'Paste your directory tree (e.g., with ├──, └──, or indented)',
+        prompt: 'Enter the directory structure tree text',
+        ignoreFocusOut: true,
+      });
+    }
 
     if (!input) {
       return vscode.window.showErrorMessage('No input provided.');
     }
+
     const folderUri = await vscode.window.showOpenDialog({
       canSelectFolders: true,
       canSelectFiles: false,
