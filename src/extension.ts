@@ -44,7 +44,15 @@ function parseDirectoryTree(input: string, rootPath: string): { path: string, is
     }
 
     const indent = match[1].length;
-    const nameRaw = match[2].trim();
+
+    let nameRaw = match[2].trim();
+
+    //remove inline comments 
+    const hashIndex = nameRaw.indexOf('#');
+    if (hashIndex !== -1) {
+      nameRaw = nameRaw.slice(0, hashIndex).trim();
+    }
+    // const nameRaw = match[2].trim();
     const isDir = nameRaw.endsWith('/') || nameRaw.endsWith(':');
     const name = nameRaw.replace(/[:/]$/, '').trim();
 
