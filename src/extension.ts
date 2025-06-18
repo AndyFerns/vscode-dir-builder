@@ -229,8 +229,8 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
         function confirm() {
           vscode.postMessage({ command: 'confirm' });
         }
-        function confirm() {
-          vscode.postMessage({ command: 'confirm' });
+        function goBack() {
+          vscode.postMessage({ command: 'back' });
         }
       </script>
     </body>
@@ -327,7 +327,7 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.window.showInformationMessage('Undo complete: All created items removed.');
         }
       },
-      
+
       async () => {
         vscode.commands.executeCommand('extension.buildDirectoryStructure');
       }
