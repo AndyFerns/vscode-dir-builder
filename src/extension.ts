@@ -175,7 +175,7 @@ function generateTreeHTML(node: any): string {
   `;
 }
 
-function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: () => void) {
+function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: () => void, onBack: () => void) {
   const panel = vscode.window.createWebviewPanel(
     'previewTree',
     'Preview Directory Structure',
@@ -222,9 +222,13 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
     <body>
       <h2>Directory Preview</h2>
       <ul>${treeHtml}</ul>
+      <button onclick="goBack()">Back</button>
       <button onclick="confirm()">Create Structure</button>
       <script>
         const vscode = acquireVsCodeApi();
+        function confirm() {
+          vscode.postMessage({ command: 'confirm' });
+        }
         function confirm() {
           vscode.postMessage({ command: 'confirm' });
         }
@@ -237,6 +241,9 @@ function showPreview(treeItems: { path: string, isDir: boolean }[], onConfirm: (
     if (message.command === 'confirm') {
       panel.dispose();
       onConfirm();
+    } else if (message.command === 'back') {
+      panel.dispose();
+      onBack();
     }
   });
 }
@@ -272,53 +279,59 @@ export function activate(context: vscode.ExtensionContext) {
     const rootPath = folderUri[0].fsPath;
     const items = parseDirectoryTree(input, rootPath);
 
-    showPreview(items, async () => {
-      createdItems = [];
-      for (const item of items) {
-        if (item.isDir) {
-          if (!fs.existsSync(item.path)) {
-            fs.mkdirSync(item.path, { recursive: true });
-            createdItems.push(item.path);
-          }
-        } else {
-          if (fs.existsSync(item.path) && fs.lstatSync(item.path).isDirectory()) {
-            console.warn(`Skipping write to directory path: ${item.path}`);
-            continue;
-          }
-
-          if (fs.existsSync(item.path)) {
-            const choice = await vscode.window.showQuickPick([
-              'Overwrite', 'Skip', 'Cancel Entire Operation'
-            ], { placeHolder: `File already exists: ${item.path}` });
-
-            if (choice === 'Cancel Entire Operation') {
-              vscode.window.showWarningMessage('Directory creation cancelled by user.');
-              return;
-            } else if (choice === 'Skip') {
+    showPreview(items, 
+      async () => {
+        createdItems = [];
+        for (const item of items) {
+          if (item.isDir) {
+            if (!fs.existsSync(item.path)) {
+              fs.mkdirSync(item.path, { recursive: true });
+              createdItems.push(item.path);
+            }
+          } else {
+            if (fs.existsSync(item.path) && fs.lstatSync(item.path).isDirectory()) {
+              console.warn(`Skipping write to directory path: ${item.path}`);
               continue;
             }
-          }
-          fs.writeFileSync(item.path, '', { flag: 'w' });
-          createdItems.push(item.path);
-        }
-      }
 
-      const undo = await vscode.window.showInformationMessage('Directory structure created successfully!', 'Undo');
-      if (undo === 'Undo') {
-        for (const p of [...createdItems].reverse()) {
-          try {
-            if (fs.lstatSync(p).isDirectory()) {
-              fs.rmdirSync(p, { recursive: true });
-            } else {
-              fs.unlinkSync(p);
+            if (fs.existsSync(item.path)) {
+              const choice = await vscode.window.showQuickPick([
+                'Overwrite', 'Skip', 'Cancel Entire Operation'
+              ], { placeHolder: `File already exists: ${item.path}` });
+
+              if (choice === 'Cancel Entire Operation') {
+                vscode.window.showWarningMessage('Directory creation cancelled by user.');
+                return;
+              } else if (choice === 'Skip') {
+                continue;
+              }
             }
-          } catch (e) {
-            console.error('Undo error:', e);
+            fs.writeFileSync(item.path, '', { flag: 'w' });
+            createdItems.push(item.path);
           }
         }
-        vscode.window.showInformationMessage('Undo complete: All created items removed.');
+
+        const undo = await vscode.window.showInformationMessage('Directory structure created successfully!', 'Undo');
+        if (undo === 'Undo') {
+          for (const p of [...createdItems].reverse()) {
+            try {
+              if (fs.lstatSync(p).isDirectory()) {
+                fs.rmdirSync(p, { recursive: true });
+              } else {
+                fs.unlinkSync(p);
+              }
+            } catch (e) {
+              console.error('Undo error:', e);
+            }
+          }
+          vscode.window.showInformationMessage('Undo complete: All created items removed.');
+        }
+      },
+      
+      async () => {
+        vscode.commands.executeCommand('extension.buildDirectoryStructure');
       }
-    });
+    );  
   });
 
   context.subscriptions.push(disposable);
