@@ -8,7 +8,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Initial release
 
-## [1.0.0] - 2025-06-14
+## [0.0.1] - 2025-06-14
 
 ### Added
 
@@ -26,3 +26,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - 🧯 Prevented creation attempts on directory paths that already exist as folders.
 - 🧼 Improved parsing logic to clean whitespace, smart symbols, and edge formatting issues.
 - 💥 Fixed broken previews caused by malformed or single-line tree inputs.
+
+## [0.0.2] - 2025-06-15
+
+### Fixed
+
+- 📝 Fixed bug where directory structures with inline comments (e.g. `# notes`) broke parsing logic. Extension now ignores and correctly handles comments in ASCII-style trees.
+
+---
