@@ -1,6 +1,6 @@
-# vscode-dir-builder
+# Create Directory Structure
 
-**vscode-dir-builder** is a Visual Studio Code extension that allows you to generate complex directory and file structures by simply pasting a directory tree in text format. It's perfect for scaffolding projects quickly and visually. Its also useful for DIRECTLY copy-pasting directory structures provided by LLMs and creating the files and folders automatically, saving precious time!
+**Create Directory Structure** is a Visual Studio Code extension that allows you to generate complex directory and file structures by simply pasting a directory tree in text format. It's perfect for scaffolding projects quickly and visually. Its also useful for DIRECTLY copy-pasting directory structures provided by LLMs and creating the files and folders automatically, saving precious time!
 
 ![Preview](assets/Project%20Demo%20GIF.gif)
 
@@ -36,18 +36,6 @@ This extension currently does not contribute any custom settings.
 - May fail silently on deeply nested trees if input formatting is inconsistent.
 - Folder creation might be blocked if the root folder is already open and locked in another process (e.g., VSCode itself).
 - Undo might not work perfectly on symbolic links or read-only files.
-
----
-
-## Release Notes
-
-### 1.0.0
-
-Initial release of vscode-dir-builder 🎉  
-
-- Includes multiline tree input via webview.
-- Tree preview panel with themed styling.
-- Directory and file creation with conflict handling and undo.
 
 ---
 
